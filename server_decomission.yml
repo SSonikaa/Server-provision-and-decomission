@@ -1,0 +1,16 @@
+---
+- name: EC2 Decommissioning using Ansible
+  hosts: local
+  connection: local
+  gather_facts: false
+
+  vars:
+    region: ap-south-1
+
+  tasks:
+    - name: Terminate EC2 instance
+      amazon.aws.ec2_instance:
+        state: absent
+        instance_ids: "{{ ec2_id }}"
+        region: "{{ region }}"
+

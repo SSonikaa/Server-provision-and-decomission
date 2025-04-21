@@ -1,0 +1,57 @@
+---
+- name: Ansible ec2 launch
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    keypair: new-key
+    instance_type: t3.micro
+    instance_name: ec2-instance
+    image: ami-002f6e91abff6eb96
+    wait: yes
+    group: webserver
+    region: ap-south-1
+    security_group: my-jenkins-security-grp1
+
+  tasks:
+  - name: configuring security group for the instance
+    ec2_group:
+        name: "{{ security_group }}"
+        description: my-jenkins-security_group
+        region: "{{ region }}"
+        rules:
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 8080
+              to_port: 8080
+              cidr_ip: 0.0.0.0/0
+        rules_egress:
+            - proto: all
+              cidr_ip: 0.0.0.0/0
+
+
+    environment:
+      AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+
+
+  - name: creating ec2 instance
+    amazon.aws.ec2_instance:
+        security_group: "{{ security_group }}"
+        name: "{{ instance_name }}"
+        key_name: "{{ keypair }}"
+        instance_type: "{{ instance_type}}"
+        image_id: "{{ image }}"
+        region: "{{ region }}"
+    register: ec2_output
+  - name: Accessing the public ip
+    debug:
+      msg: "PUBLIC IP is: {{ ec2_output.instances[0].public_ip_address}}"
